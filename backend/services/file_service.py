@@ -110,20 +110,25 @@ class FileService:
         # Return relative path
         return str(filepath.relative_to(self.upload_folder))
 
-    def save_material_image(self, image: Image.Image, project_id: str,
+    def save_material_image(self, image: Image.Image, project_id: Optional[str],
                             image_format: str = 'PNG') -> str:
         """
         Save standalone generated material image (not bound to a specific page)
 
         Args:
             image: PIL Image object
-            project_id: Project ID
+            project_id: Project ID (None for global materials)
             image_format: Image format (PNG, JPEG, etc.)
 
         Returns:
             Relative file path from upload folder
         """
-        materials_dir = self._get_materials_dir(project_id)
+        # Handle global materials (project_id is None)
+        if project_id is None:
+            materials_dir = self.upload_folder / "materials"
+            materials_dir.mkdir(exist_ok=True, parents=True)
+        else:
+            materials_dir = self._get_materials_dir(project_id)
 
         # Use lowercase extension
         ext = image_format.lower()
@@ -157,18 +162,21 @@ class FileService:
             return True
         return False
     
-    def get_file_url(self, project_id: str, file_type: str, filename: str) -> str:
+    def get_file_url(self, project_id: Optional[str], file_type: str, filename: str) -> str:
         """
         Generate file URL for frontend access
         
         Args:
-            project_id: Project ID
-            file_type: 'template' or 'pages'
+            project_id: Project ID (None for global materials)
+            file_type: 'template', 'pages', or 'materials'
             filename: File name
         
         Returns:
             URL path for file access
         """
+        if project_id is None:
+            # Global materials
+            return f"/files/materials/{filename}"
         return f"/files/{project_id}/{file_type}/{filename}"
     
     def get_absolute_path(self, relative_path: str) -> str:
